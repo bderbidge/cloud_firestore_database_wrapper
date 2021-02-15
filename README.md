@@ -1,7 +1,5 @@
 # cloud_firestore_database_wrapper
 
-A new Flutter package project.
-
 ## Getting Started
 
 ```
@@ -23,3 +21,21 @@ await dataSource.create(path, id: user.uid, data: user.toJson());
 User user = await dataSource.getSingleByRefId<User>(
             path, originaluser.uid, User.fromJSON);
 ```
+
+//TODO: Fill in these sections
+
+### Implement FromJson
+
+### Get Single
+
+### Create
+
+### Delete
+
+### Get Collection
+
+### Update
+
+### Get Collection With Params
+
+### Get Collection Stream With Params
