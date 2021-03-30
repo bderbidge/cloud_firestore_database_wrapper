@@ -1,6 +1,6 @@
 name: cloud_firestore_database_wrapper
 description: A new Flutter package project.
-version: 0.0.2
+version: 0.0.3
 homepage: https://github.com/bderbidge/cloud_firestore_database_wrapper
 
 environment:
@@ -9,8 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cloud_firestore: ^0.16.0
-  cloud_firestore_mocks: ^0.6.0
+  cloud_firestore: ^1.0.3
+  cloud_firestore_mocks: ^0.8.0
 
 dev_dependencies:
   flutter_test:

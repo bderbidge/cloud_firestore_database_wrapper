@@ -49,6 +49,11 @@ class GetCollectionException extends CloudFirestoreHelperError {
       : super(message, stackTrace);
 }
 
+class GetCollectionGroupException extends CloudFirestoreHelperError {
+  GetCollectionGroupException(String message, StackTrace stackTrace)
+      : super(message, stackTrace);
+}
+
 class OnlyUseOneException extends CloudFirestoreHelperError {
   OnlyUseOneException(String message, StackTrace stackTrace)
       : super(message, stackTrace);

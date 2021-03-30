@@ -188,4 +188,16 @@ class FirestoreDataSource implements IDataSource {
       throw FirestoreReferenceException(err.toString(), s);
     }
   }
+
+  Future<List<T>> getSubCollection<T>(String path, FromJson fromJson) async {
+    try {
+      var collectionReference = _db.collectionGroup(path);
+      var snapshots = collectionReference
+          .get()
+          .then((snapshot) => FirestoreParser<T>().parse(snapshot, fromJson));
+      return snapshots;
+    } catch (err, s) {
+      throw GetCollectionGroupException(err.toString(), s);
+    }
+  }
 }

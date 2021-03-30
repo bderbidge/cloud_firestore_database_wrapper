@@ -1,3 +1,7 @@
+## [0.0.3] - 3/29/2021
+
+- Update firestore dependencies
+
 ## [0.0.2] - 2/15/2021.
 
 - Update export to include interface
