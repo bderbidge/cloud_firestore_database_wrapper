@@ -98,4 +98,4 @@ final users = [
     "userType": [],
     "score": 100
   },
-];
+] as List<Map<String, dynamic>>;

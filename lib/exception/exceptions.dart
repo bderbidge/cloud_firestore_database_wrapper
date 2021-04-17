@@ -74,7 +74,7 @@ class ArrayUseException extends CloudFirestoreHelperError {
 }
 
 class QueryRangeConditionException extends CloudFirestoreHelperError {
-  QueryRangeConditionException(String value, String key, StackTrace stackTrace)
+  QueryRangeConditionException(String value, String? key, StackTrace stackTrace)
       : super('Duplicate range: $value condition for key: $key', stackTrace);
 }
 

@@ -12,13 +12,11 @@ void main() {
   * create a new group otherwise tests will fail due to concurency issues
   */
   group('Mock Firestore methods', () {
-    FirestoreDataSource dataSource;
-    MockFirestoreInstance instance;
+    MockFirestoreInstance instance = MockFirestoreInstance();
+    FirestoreDataSource dataSource = FirestoreDataSource(instance);
     final List<User> users = [];
     final path = 'users';
     setUpAll(() async {
-      instance = MockFirestoreInstance();
-      dataSource = FirestoreDataSource(instance);
       for (var user in mockusers.users) {
         var ref = instance.collection(path).doc(user['uid']);
         ref.set(user);
@@ -41,7 +39,11 @@ void main() {
           date: "12/14/2020",
           score: 300,
           userType: []);
-      await dataSource.create(path, id: user.uid, data: user.toJson());
+      await dataSource.create(
+        path,
+        user.toJson(),
+        id: user.uid,
+      );
       return user;
     }
 
@@ -60,10 +62,13 @@ void main() {
     test('get single document as user model', () async {
       try {
         final originaluser = users.first;
-        User user = await dataSource.getSingleByRefId<User>(
-            path, originaluser.uid, User.fromJSON);
-
-        expect(originaluser.toJson(), user.toJson());
+        final uid = originaluser.uid;
+        if (uid != null) {
+          User user =
+              await dataSource.getSingleByRefId<User>(path, uid, User.fromJSON);
+          expect(originaluser.toJson(), user.toJson());
+        }
+        throw Exception();
       } catch (err) {
         print(err);
         throw err;
@@ -120,26 +125,27 @@ void main() {
             value: 400,
             whereQueryType: WhereQueryType.IsLessThanOrEqualTo),
       ];
-      final validList = await dataSource
-          .getCollectionwithParams(path, User.fromJSON, where: validMap);
-      final typeList = users
-          .where((element) => (element.score > 100) && (element.score <= 400));
-      expect(typeList.length, validList.length);
 
-      // citiesRef.where("state", "==", "CA").where("population", ">", 1000000);
-
-      // invalid
-      // citiesRef.where("state", ">=", "CA").where("population", ">", 100000);
-
-      final invalidMap = [
-        QueryType(
-            id: 'type', value: 3, whereQueryType: WhereQueryType.IsLessThan),
-        QueryType(
-            id: 'score',
-            value: 100,
-            whereQueryType: WhereQueryType.IsGreaterThanOrEqualTo)
-      ];
       try {
+        final validList = await dataSource
+            .getCollectionwithParams(path, User.fromJSON, where: validMap);
+        final typeList = users.where(
+            (element) => (element.score! > 100) && (element.score! <= 400));
+        expect(typeList.length, validList.length);
+
+        // citiesRef.where("state", "==", "CA").where("population", ">", 1000000);
+
+        // invalid
+        // citiesRef.where("state", ">=", "CA").where("population", ">", 100000);
+
+        final invalidMap = [
+          QueryType(
+              id: 'type', value: 3, whereQueryType: WhereQueryType.IsLessThan),
+          QueryType(
+              id: 'score',
+              value: 100,
+              whereQueryType: WhereQueryType.IsGreaterThanOrEqualTo)
+        ];
         final invalidlist = await dataSource
             .getCollectionwithParams(path, User.fromJSON, where: invalidMap);
         expect(null, invalidlist);
@@ -154,16 +160,16 @@ void main() {
         final user = await createNewUser(users.length.toString());
 
         User createdUser = await dataSource.getSingleByRefId<User>(
-            path, user.uid, User.fromJSON);
+            path, user.uid!, User.fromJSON);
         expect(user.toJson(), createdUser.toJson());
 
         var email = "example2@example.com";
-        await dataSource.update(path, createdUser.uid, {"email": email});
+        await dataSource.update(path, createdUser.uid!, {"email": email});
         final updatedUser = await dataSource.getSingleByRefId<User>(
-            path, createdUser.uid, User.fromJSON);
+            path, createdUser.uid!, User.fromJSON);
         expect(email, updatedUser.email);
 
-        final deleted = await deleteUser(user.uid);
+        final deleted = await deleteUser(user.uid!);
         expect(true, deleted);
       } catch (err) {
         print(err);

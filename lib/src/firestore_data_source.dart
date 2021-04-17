@@ -36,13 +36,15 @@ class FirestoreDataSource implements IDataSource {
   }
 
   Future<List<T>> getCollectionwithParams<T>(String path, FromJson fromJson,
-      {List<QueryType> where,
-      Map<String, bool> orderby,
-      int limit,
-      String startAfterID}) async {
-    where = checkQueryConstructor(where);
+      {List<QueryType>? where,
+      Map<String, bool>? orderby,
+      int? limit,
+      String? startAfterID}) async {
+    if (where != null) {
+      where = checkQueryConstructor(where);
+    }
     try {
-      DocumentSnapshot startAfter;
+      DocumentSnapshot? startAfter;
       if (startAfterID != null) {
         startAfter = await firestoreRef(path, startAfterID).get();
       }
@@ -57,8 +59,10 @@ class FirestoreDataSource implements IDataSource {
 
   Stream<List<T>> getCollectionStreamWithParams<T>(
       String path, FromJson fromJson,
-      {List<QueryType> where, Map<String, bool> orderby, int limit}) {
-    where = checkQueryConstructor(where);
+      {List<QueryType>? where, Map<String, bool>? orderby, int? limit}) {
+    if (where != null) {
+      where = checkQueryConstructor(where);
+    }
     try {
       var collectionReference = queryConstruction(
         path,
@@ -75,10 +79,10 @@ class FirestoreDataSource implements IDataSource {
   }
 
   Query queryConstruction(String path,
-      {List<QueryType> where,
-      Map<String, bool> orderby,
-      int limit,
-      DocumentSnapshot startAfter}) {
+      {List<QueryType>? where,
+      Map<String, bool>? orderby,
+      int? limit,
+      DocumentSnapshot? startAfter}) {
     try {
       Query query = _db.collection(path);
 
@@ -146,8 +150,8 @@ class FirestoreDataSource implements IDataSource {
 
   //Post functions
 
-  Future<String> create(String path,
-      {String id, Map<String, dynamic> data}) async {
+  Future<String> create(String path, Map<String, dynamic> data,
+      {String? id}) async {
     try {
       if (id != null) {
         firestoreRef(path, id).set(data);
@@ -161,11 +165,24 @@ class FirestoreDataSource implements IDataSource {
     }
   }
 
+  addDocToSubcollection(
+      DocumentReference ref, String collectionPath, Map<String, dynamic> data) {
+    ref.collection(collectionPath).add(data);
+  }
+
   //Put functions
 
   Future<Null> update(String path, String id, Map<String, dynamic> data) async {
     try {
       await firestoreRef(path, id).update(data);
+    } catch (err, s) {
+      throw UpdateSingleException(err.toString(), s);
+    }
+  }
+
+  updateDocSubcollection(DocumentReference ref, Map<String, dynamic> data) {
+    try {
+      ref.update(data);
     } catch (err, s) {
       throw UpdateSingleException(err.toString(), s);
     }

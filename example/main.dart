@@ -26,27 +26,25 @@ class MyApp extends StatefulWidget {
 class MyAppState extends State<MyApp> {
   // The GlobalKey keeps track of the visible state of the list items
   // while they are being animated.
-  final GlobalKey<AnimatedListState> _listKey = GlobalKey();
+  final GlobalKey<AnimatedListState> listKey = GlobalKey<AnimatedListState>();
 
   // backing data
   List<User> _data = [];
   final path = 'users';
-  FirebaseFirestore instance;
-  FirestoreDataSource dataSource;
+  final FirebaseFirestore finstance = FirebaseFirestore.instance;
+  final FirestoreDataSource dataSource =
+      FirestoreDataSource(FirebaseFirestore.instance);
   num index = 0;
 
   @override
   Future<void> initState() async {
-    super.initState();
-    instance = FirebaseFirestore.instance;
-    dataSource = FirestoreDataSource(instance);
-
     for (var user in mockusers.users) {
-      var ref = instance.collection(path).doc(user['uid']);
+      var ref = finstance.collection(path).doc(user['uid']);
       ref.set(user);
       index++;
     }
     _data = await dataSource.getCollection<User>(path, User.fromJSON);
+    super.initState();
   }
 
   @override
@@ -57,24 +55,28 @@ class MyAppState extends State<MyApp> {
           height: 300,
           child: AnimatedList(
             // Give the Animated list the global key
-            key: _listKey,
+            key: listKey,
             initialItemCount: _data.length,
             // Similar to ListView itemBuilder, but AnimatedList has
             // an additional animation parameter.
             itemBuilder: (context, index, animation) {
               // Breaking the row widget out as a method so that we can
               // share it with the _removeSingleItem() method.
-              return _buildItem(_data[index], animation);
+              var name = _data[index].name;
+              if (name != null) {
+                return _buildItem(name, animation);
+              }
+              return _buildItem("", animation);
             },
           ),
         ),
-        RaisedButton(
+        ElevatedButton(
           child: Text('Insert item', style: TextStyle(fontSize: 20)),
           onPressed: () {
             _insertSingleItem();
           },
         ),
-        RaisedButton(
+        ElevatedButton(
           child: Text('Remove item', style: TextStyle(fontSize: 20)),
           onPressed: () {
             _removeSingleItem();
@@ -85,13 +87,13 @@ class MyAppState extends State<MyApp> {
   }
 
   // This is the animated row with the Card.
-  Widget _buildItem(User item, Animation animation) {
+  Widget _buildItem(String name, Animation<double> animation) {
     return SizeTransition(
       sizeFactor: animation,
       child: Card(
         child: ListTile(
           title: Text(
-            item.name,
+            name,
             style: TextStyle(fontSize: 20),
           ),
         ),
@@ -113,24 +115,30 @@ class MyAppState extends State<MyApp> {
         type: 3,
         userType: [],
         score: 100);
-    dataSource.create(path, id: index.toString(), data: user.toJson());
+    dataSource.create(
+      path,
+      user.toJson(),
+      id: index.toString(),
+    );
     _data.insert(insertIndex, user);
-
-    // Add the item visually to the AnimatedList.
-    _listKey.currentState.insertItem(insertIndex);
   }
 
   void _removeSingleItem() {
     int removeIndex = 2;
     // Remove item from data list but keep copy to give to the animation.
     User removedItem = _data.removeAt(removeIndex);
-    dataSource.delete(path, removedItem.uid);
-    // This builder is just for showing the row while it is still
-    // animating away. The item is already gone from the data list.
-    AnimatedListRemovedItemBuilder builder = (context, animation) {
-      return _buildItem(removedItem, animation);
-    };
-    // Remove the item visually from the AnimatedList.
-    _listKey.currentState.removeItem(removeIndex, builder);
+    var uid = removedItem.uid;
+    if (uid != null) {
+      dataSource.delete(path, uid);
+      // This builder is just for showing the row while it is still
+      // animating away. The item is already gone from the data list.
+      AnimatedListRemovedItemBuilder builder = (context, animation) {
+        var name = removedItem.name;
+        if (name != null)
+          return _buildItem(name, animation);
+        else
+          return _buildItem("name", animation);
+      };
+    }
   }
 }

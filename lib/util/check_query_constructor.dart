@@ -3,13 +3,13 @@ import 'package:cloud_firestore_database_wrapper/interfaces/i_data_source.dart';
 
 checkQueryConstructor(List<QueryType> queries) {
   //Validate query list
-  Map<String, QueryType> idmap = {};
-  Set<WhereQueryType> setQuery = {};
-  Map<String, List> rangeMap = {};
+  Map<String?, QueryType> idmap = {};
+  Set<WhereQueryType?> setQuery = {};
+  Map<String?, List> rangeMap = {};
 
   for (var query in queries) {
     if (rangeMap.containsKey(query.id)) {
-      rangeMap[query.id].add(query.whereQueryType);
+      rangeMap[query.id]!.add(query.whereQueryType);
     } else {
       rangeMap[query.id] = [query.whereQueryType];
     }
@@ -63,14 +63,14 @@ checkQueryConstructor(List<QueryType> queries) {
     }
     if (idmap.containsKey(query.id)) {
       //If multiple where clauses on the same id then use where in
-      if (idmap[query.id].whereQueryType == WhereQueryType.IsEqualTo) {
-        var oldQ = idmap[query.id];
+      if (idmap[query.id]!.whereQueryType == WhereQueryType.IsEqualTo) {
+        var oldQ = idmap[query.id]!;
         idmap[query.id] = QueryType(
             id: query.id,
             value: [query.value, oldQ.value],
             whereQueryType: WhereQueryType.WhereIn);
-      } else if (idmap[query.id].whereQueryType == WhereQueryType.WhereIn) {
-        var list = idmap[query.id].value as List;
+      } else if (idmap[query.id]!.whereQueryType == WhereQueryType.WhereIn) {
+        var list = idmap[query.id]!.value as List;
         list.add(query.value);
       }
     } else {

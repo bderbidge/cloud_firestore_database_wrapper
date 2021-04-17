@@ -14,4 +14,4 @@ class FirestoreParser<T> {
   }
 }
 
-typedef T FromJson<T>(Map<String, dynamic> data, String id);
+typedef T FromJson<T>(Map<String, dynamic>? data, String id);

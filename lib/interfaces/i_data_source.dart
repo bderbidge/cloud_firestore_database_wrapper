@@ -26,7 +26,7 @@ final Set<WhereQueryType> queryRange = {
 class QueryType {
   final id;
   final dynamic value;
-  final WhereQueryType whereQueryType;
+  final WhereQueryType? whereQueryType;
   QueryType({this.id, this.value, this.whereQueryType});
 }
 
@@ -35,19 +35,19 @@ abstract class IDataSource {
 
   update(String path, String id, Map<String, dynamic> data);
 
-  Future<String> create(String path, {String id, Map<String, dynamic> data});
+  Future<String> create(String path, Map<String, dynamic> data, {String? id});
 
   Future<T> getSingleByRefId<T>(String path, String id, FromJson fromJson);
 
   Future<List<T>> getCollection<T>(String path, FromJson fromJson);
 
   Future<List<T>> getCollectionwithParams<T>(String path, FromJson fromJson,
-      {List<QueryType> where,
-      Map<String, bool> orderby,
-      int limit,
-      String startAfterID});
+      {List<QueryType>? where,
+      Map<String, bool>? orderby,
+      int? limit,
+      String? startAfterID});
 
   Stream<List<T>> getCollectionStreamWithParams<T>(
       String path, FromJson fromJson,
-      {List<QueryType> where, Map<String, bool> orderby, int limit});
+      {List<QueryType>? where, Map<String, bool>? orderby, int? limit});
 }
