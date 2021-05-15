@@ -1,6 +1,11 @@
-## [0.0.4] - 5/15/2021
+## [1.0.1] - 5/15/2021
+
+- Expose 'getSubcollection' through i_data_source interface
+
+## [1.0.0] - 5/15/2021
 
 - Add 'getSubcollection' functionality
+- Package is null safe
 
 ## [0.0.3] - 3/29/2021
 

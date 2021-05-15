@@ -50,4 +50,8 @@ abstract class IDataSource {
   Stream<List<T>> getCollectionStreamWithParams<T>(
       String path, FromJson fromJson,
       {List<QueryType>? where, Map<String, bool>? orderby, int? limit});
+
+  Future<List<T>> getSubCollection<T>(
+      List<String> paths, List<String> ids, FromJson fromJson,
+      {List<QueryType>? where, Map<String, bool>? orderby, int? limit});
 }

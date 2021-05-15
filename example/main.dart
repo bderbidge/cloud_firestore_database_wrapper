@@ -132,13 +132,6 @@ class MyAppState extends State<MyApp> {
       dataSource.delete(path, uid);
       // This builder is just for showing the row while it is still
       // animating away. The item is already gone from the data list.
-      AnimatedListRemovedItemBuilder builder = (context, animation) {
-        var name = removedItem.name;
-        if (name != null)
-          return _buildItem(name, animation);
-        else
-          return _buildItem("name", animation);
-      };
     }
   }
 }
