@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_firestore_database_wrapper/util/check_query_constructor.dart';
 import "dart:async";
-
 import '../exception/exceptions.dart';
 import '../interfaces/i_data_source.dart';
 import '../util/firestore_parser.dart';
@@ -19,7 +18,7 @@ class FirestoreDataSource implements IDataSource {
       var document = await ref.get();
       return parser.parseIndividual(document, fromJson);
     } catch (err, s) {
-      throw GetSingleDocumentException(err.toString(), s);
+      throw GetSingleDocumentError(err.toString(), s);
     }
   }
 
@@ -31,7 +30,7 @@ class FirestoreDataSource implements IDataSource {
           .then((snapshot) => FirestoreParser<T>().parse(snapshot, fromJson));
       return snapshots;
     } catch (err, s) {
-      throw GetCollectionException(err.toString(), s);
+      throw GetCollectionError(err.toString(), s);
     }
   }
 
@@ -48,12 +47,13 @@ class FirestoreDataSource implements IDataSource {
       if (startAfterID != null) {
         startAfter = await firestoreRef(path, startAfterID).get();
       }
-      var collectionReference = queryConstruction(path,
+      Query query = _db.collection(path);
+      var collectionReference = queryConstruction(query,
           where: where, orderby: orderby, limit: limit, startAfter: startAfter);
       var doc = await collectionReference.get();
       return FirestoreParser<T>().parse(doc, fromJson);
     } catch (err, s) {
-      throw CollectionWithParamsException(err.toString(), s);
+      throw CollectionWithParamsError(err.toString(), s);
     }
   }
 
@@ -64,8 +64,9 @@ class FirestoreDataSource implements IDataSource {
       where = checkQueryConstructor(where);
     }
     try {
+      Query query = _db.collection(path);
       var collectionReference = queryConstruction(
-        path,
+        query,
         where: where,
         orderby: orderby,
         limit: limit,
@@ -74,18 +75,16 @@ class FirestoreDataSource implements IDataSource {
       return snapshots
           .map((snapshot) => FirestoreParser<T>().parse(snapshot, fromJson));
     } catch (err, s) {
-      throw CollectionStreamWithParamsException(err.toString(), s);
+      throw CollectionStreamWithParamsError(err.toString(), s);
     }
   }
 
-  Query queryConstruction(String path,
+  Query queryConstruction(Query query,
       {List<QueryType>? where,
       Map<String, bool>? orderby,
       int? limit,
       DocumentSnapshot? startAfter}) {
     try {
-      Query query = _db.collection(path);
-
       where?.forEach((value) {
         switch (value.whereQueryType) {
           case WhereQueryType.IsEqualTo:
@@ -123,7 +122,7 @@ class FirestoreDataSource implements IDataSource {
             break;
           default:
             var type = value.whereQueryType;
-            throw UnknownQueryException(
+            throw UnknownQueryError(
                 'Unknown query type $type', StackTrace.current);
         }
       });
@@ -144,7 +143,7 @@ class FirestoreDataSource implements IDataSource {
 
       return query;
     } catch (err, s) {
-      throw FailedQueryConstructionException(err.toString(), s);
+      throw FailedQueryConstructionError(err.toString(), s);
     }
   }
 
@@ -161,7 +160,7 @@ class FirestoreDataSource implements IDataSource {
         return ref.id;
       }
     } catch (err, s) {
-      throw CreateSingleException(err.toString(), s);
+      throw CreateSingleError(err.toString(), s);
     }
   }
 
@@ -176,7 +175,7 @@ class FirestoreDataSource implements IDataSource {
     try {
       await firestoreRef(path, id).update(data);
     } catch (err, s) {
-      throw UpdateSingleException(err.toString(), s);
+      throw UpdateSingleError(err.toString(), s);
     }
   }
 
@@ -184,7 +183,7 @@ class FirestoreDataSource implements IDataSource {
     try {
       ref.update(data);
     } catch (err, s) {
-      throw UpdateSingleException(err.toString(), s);
+      throw UpdateSingleError(err.toString(), s);
     }
   }
 
@@ -194,7 +193,7 @@ class FirestoreDataSource implements IDataSource {
     try {
       firestoreRef(path, id).delete();
     } catch (err, s) {
-      throw DeleteSingleException(err.toString(), s);
+      throw DeleteSingleError(err.toString(), s);
     }
   }
 
@@ -202,19 +201,41 @@ class FirestoreDataSource implements IDataSource {
     try {
       return _db.collection(path).doc(id);
     } catch (err, s) {
-      throw FirestoreReferenceException(err.toString(), s);
+      throw FirestoreReferenceError(err.toString(), s);
     }
   }
 
-  Future<List<T>> getSubCollection<T>(String path, FromJson fromJson) async {
+  Future<List<T>> getSubCollection<T>(
+      List<String> paths, List<String> ids, FromJson fromJson,
+      {List<QueryType>? where, Map<String, bool>? orderby, int? limit}) async {
+    if (where != null) {
+      where = checkQueryConstructor(where);
+    }
+
+    if (ids.length >= paths.length) {
+      throw GetCollectionGroupError(
+          "number of ids must be less than paths for subcollection",
+          StackTrace.current);
+    }
     try {
-      var collectionReference = _db.collectionGroup(path);
-      var snapshots = collectionReference
-          .get()
-          .then((snapshot) => FirestoreParser<T>().parse(snapshot, fromJson));
-      return snapshots;
+      CollectionReference cr = _db.collection(paths[0]);
+      DocumentReference doc = cr.doc(ids[0]);
+      paths.removeAt(0);
+      ids.removeAt(0);
+      for (var item in paths) {
+        //if first do this
+        cr = doc.collection(item);
+        for (var id in ids) {
+          doc = cr.doc(id);
+        }
+      }
+      Query query = cr;
+      var collectionReference = queryConstruction(query,
+          where: where, orderby: orderby, limit: limit);
+      var docs = await collectionReference.get();
+      return FirestoreParser<T>().parse(docs, fromJson);
     } catch (err, s) {
-      throw GetCollectionGroupException(err.toString(), s);
+      throw GetCollectionGroupError(err.toString(), s);
     }
   }
 }

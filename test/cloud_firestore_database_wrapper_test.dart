@@ -3,7 +3,8 @@ import 'package:cloud_firestore_database_wrapper/interfaces/i_data_source.dart';
 import 'package:cloud_firestore_database_wrapper/src/firestore_data_source.dart';
 import 'package:cloud_firestore_mocks/cloud_firestore_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'mock_data/mock_user.dart' as mockusers;
+import 'mock_data/mock_user.dart' as mock;
+import 'test_models/address.dart';
 import 'test_models/user.dart';
 
 void main() {
@@ -15,12 +16,24 @@ void main() {
     MockFirestoreInstance instance = MockFirestoreInstance();
     FirestoreDataSource dataSource = FirestoreDataSource(instance);
     final List<User> users = [];
+    final List<Address> addresses = [];
     final path = 'users';
+    final addressPath = 'address';
     setUpAll(() async {
-      for (var user in mockusers.users) {
+      for (var user in mock.users) {
         var ref = instance.collection(path).doc(user['uid']);
         ref.set(user);
         users.add(User.fromJSON(user, user['uid']));
+      }
+
+      for (var address in mock.addresses) {
+        var addressref = instance
+            .collection(path)
+            .doc(users.first.uid)
+            .collection(addressPath)
+            .doc(address['uid']);
+        addressref.set(address);
+        addresses.add(Address.fromJSON(address, address['uid']));
       }
     });
 
@@ -52,7 +65,7 @@ void main() {
       try {
         await dataSource.getSingleByRefId<User>(path, id, User.fromJSON);
       } catch (err) {
-        if (!(err is GetSingleDocumentException)) {
+        if (!(err is GetSingleDocumentError)) {
           throw err;
         }
       }
@@ -68,7 +81,7 @@ void main() {
               await dataSource.getSingleByRefId<User>(path, uid, User.fromJSON);
           expect(originaluser.toJson(), user.toJson());
         }
-        throw Exception();
+        throw Error();
       } catch (err) {
         print(err);
         throw err;
@@ -111,7 +124,7 @@ void main() {
       expect(typeList.length, list.length);
     });
 
-    test('query range exceptions', () async {
+    test('query range Errors', () async {
       // valid
       // citiesRef.where("state", ">=", "CA").where("state", "<=", "IN");
 
@@ -150,7 +163,7 @@ void main() {
             .getCollectionwithParams(path, User.fromJSON, where: invalidMap);
         expect(null, invalidlist);
       } catch (err) {
-        var isCorrectType = err is QueryRangeConditionException;
+        var isCorrectType = err is QueryRangeConditionError;
         expect(true, isCorrectType);
       }
     });
@@ -174,6 +187,43 @@ void main() {
       } catch (err) {
         print(err);
         throw err;
+      }
+    });
+
+    test('get all documents in subcollection', () async {
+      final map = [
+        QueryType(
+            id: 'city',
+            value: "Los Angeles",
+            whereQueryType: WhereQueryType.IsEqualTo)
+      ];
+      var addresses = await dataSource.getSubCollection<Address>(
+          [path, addressPath], [users.first.uid!], Address.fromJSON,
+          where: map);
+      expect(addresses.length, 6);
+    });
+
+    test('incorrect get all documents in subcollection', () async {
+      try {
+        final map = [
+          QueryType(
+              id: 'city',
+              value: "Los Angeles",
+              whereQueryType: WhereQueryType.IsEqualTo)
+        ];
+        var addresses = await dataSource.getSubCollection<Address>([
+          path,
+          addressPath
+        ], [
+          users.first.uid!,
+          users.last.uid!
+        ], Address.fromJSON, where: map);
+        expect(addresses, null);
+      } catch (err) {
+        var isCorrectType = err is GetCollectionGroupError;
+        expect(true, isCorrectType);
+        expect(err.toString(),
+            "number of ids must be less than paths for subcollection");
       }
     });
   });

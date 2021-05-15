@@ -99,3 +99,69 @@ final users = [
     "score": 100
   },
 ] as List<Map<String, dynamic>>;
+
+final addresses = [
+  {
+    "uid": "1",
+    "street": "123 west way",
+    "zip": 91234,
+    "city": "Los Angeles",
+    "state": "CA"
+  },
+  {
+    "uid": "2",
+    "street": "443 west way",
+    "zip": 91234,
+    "city": "Los Angeles",
+    "state": "CA"
+  },
+  {
+    "uid": "3",
+    "street": "243 west way",
+    "zip": 91234,
+    "city": "Los Angeles",
+    "state": "CA"
+  },
+  {
+    "uid": "4",
+    "street": "856 west way",
+    "zip": 91234,
+    "city": "Los Angeles",
+    "state": "CA"
+  },
+  {
+    "uid": "5",
+    "street": "645 west way",
+    "zip": 91234,
+    "city": "Los Angeles",
+    "state": "CA"
+  },
+  {
+    "uid": "6",
+    "street": "354 west way",
+    "zip": 91234,
+    "city": "Los Angeles",
+    "state": "CA"
+  },
+  {
+    "uid": "7",
+    "street": "242 west way",
+    "zip": 91234,
+    "city": "San Fransisco",
+    "state": "CA"
+  },
+  {
+    "uid": "8",
+    "street": "434 west way",
+    "zip": 91234,
+    "city": "San Fransisco",
+    "state": "CA"
+  },
+  {
+    "uid": "9",
+    "street": "525 west way",
+    "zip": 91234,
+    "city": "San Fransisco",
+    "state": "CA"
+  },
+] as List<Map<String, dynamic>>;

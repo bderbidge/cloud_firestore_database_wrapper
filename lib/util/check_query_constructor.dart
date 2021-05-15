@@ -18,33 +18,33 @@ checkQueryConstructor(List<QueryType> queries) {
     //You can't combine in , not-in, and array-contains-any in the same query.
     if (setQuery.contains(WhereQueryType.WhereIn)) {
       if (setQuery.contains(WhereQueryType.WhereNotIn)) {
-        throw OnlyUseOneException(
+        throw OnlyUseOneError(
             'Can\'t use whereIn and whereNotIn clauses in the same query',
             StackTrace.current);
       } else if (setQuery.contains(WhereQueryType.ArrayContainsAny)) {
-        throw OnlyUseOneException(
+        throw OnlyUseOneError(
             'Can\'t use whereIn and ArrayContainsAny clauses in the same query',
             StackTrace.current);
       }
     }
     if (setQuery.contains(WhereQueryType.WhereNotIn)) {
       if (setQuery.contains(WhereQueryType.WhereIn)) {
-        throw OnlyUseOneException(
+        throw OnlyUseOneError(
             'Can\'t use whereIn and WhereNotIn clauses in the same query',
             StackTrace.current);
       } else if (setQuery.contains(WhereQueryType.ArrayContainsAny)) {
-        throw OnlyUseOneException(
+        throw OnlyUseOneError(
             'Can\'t use ArrayContainsAny and WhereNotIn clauses in the same query',
             StackTrace.current);
       }
     }
     if (setQuery.contains(WhereQueryType.ArrayContainsAny)) {
       if (setQuery.contains(WhereQueryType.WhereIn)) {
-        throw OnlyUseOneException(
+        throw OnlyUseOneError(
             'Can\'t use ArrayContainsAny and WhereIn clauses in the same query',
             StackTrace.current);
       } else if (setQuery.contains(WhereQueryType.WhereNotIn)) {
-        throw OnlyUseOneException(
+        throw OnlyUseOneError(
             'Can\'t use ArrayContainsAny and WhereNotIn clauses in the same query',
             StackTrace.current);
       }
@@ -54,12 +54,12 @@ checkQueryConstructor(List<QueryType> queries) {
         query.whereQueryType == WhereQueryType.ArrayContainsAny &&
             setQuery.contains(WhereQueryType.ArrayContains)) {
       //You can't combine array-contains with array-contains-any
-      throw UnableToCombineException(StackTrace.current);
+      throw UnableToCombineError(StackTrace.current);
     }
     if (query.whereQueryType == WhereQueryType.ArrayContains &&
         setQuery.contains(WhereQueryType.ArrayContains)) {
       //Use at most one array-contains clause per query.
-      throw ArrayUseException(StackTrace.current);
+      throw ArrayUseError(StackTrace.current);
     }
     if (idmap.containsKey(query.id)) {
       //If multiple where clauses on the same id then use where in
@@ -91,7 +91,7 @@ checkQueryConstructor(List<QueryType> queries) {
           break;
         } else {
           if (!keySet.contains(key)) {
-            throw QueryRangeConditionException(
+            throw QueryRangeConditionError(
                 v.toString(), key, StackTrace.current);
           }
         }

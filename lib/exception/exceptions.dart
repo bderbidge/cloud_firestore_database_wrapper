@@ -2,83 +2,88 @@ class CloudFirestoreHelperError extends Error {
   final String message;
   final StackTrace stackTrace;
   CloudFirestoreHelperError(this.message, this.stackTrace);
+
+  @override
+  String toString() {
+    return this.message;
+  }
 }
 
-class GetSingleDocumentException extends CloudFirestoreHelperError {
-  GetSingleDocumentException(String message, StackTrace stackTrace)
+class GetSingleDocumentError extends CloudFirestoreHelperError {
+  GetSingleDocumentError(String message, StackTrace stackTrace)
       : super(message, stackTrace);
 }
 
-class FirestoreReferenceException extends CloudFirestoreHelperError {
-  FirestoreReferenceException(String message, StackTrace stackTrace)
+class FirestoreReferenceError extends CloudFirestoreHelperError {
+  FirestoreReferenceError(String message, StackTrace stackTrace)
       : super(message, stackTrace);
 }
 
-class DeleteSingleException extends CloudFirestoreHelperError {
-  DeleteSingleException(String message, StackTrace stackTrace)
+class DeleteSingleError extends CloudFirestoreHelperError {
+  DeleteSingleError(String message, StackTrace stackTrace)
       : super(message, stackTrace);
 }
 
-class UpdateSingleException extends CloudFirestoreHelperError {
-  UpdateSingleException(String message, StackTrace stackTrace)
+class UpdateSingleError extends CloudFirestoreHelperError {
+  UpdateSingleError(String message, StackTrace stackTrace)
       : super(message, stackTrace);
 }
 
-class CreateSingleException extends CloudFirestoreHelperError {
-  CreateSingleException(String message, StackTrace stackTrace)
+class CreateSingleError extends CloudFirestoreHelperError {
+  CreateSingleError(String message, StackTrace stackTrace)
       : super(message, stackTrace);
 }
 
-class FailedQueryConstructionException extends CloudFirestoreHelperError {
-  FailedQueryConstructionException(String message, StackTrace stackTrace)
+class FailedQueryConstructionError extends CloudFirestoreHelperError {
+  FailedQueryConstructionError(String message, StackTrace stackTrace)
       : super(message, stackTrace);
 }
 
-class CollectionStreamWithParamsException extends CloudFirestoreHelperError {
-  CollectionStreamWithParamsException(String message, StackTrace stackTrace)
+class CollectionStreamWithParamsError extends CloudFirestoreHelperError {
+  CollectionStreamWithParamsError(String message, StackTrace stackTrace)
       : super(message, stackTrace);
 }
 
-class CollectionWithParamsException extends CloudFirestoreHelperError {
-  CollectionWithParamsException(String message, StackTrace stackTrace)
+class CollectionWithParamsError extends CloudFirestoreHelperError {
+  CollectionWithParamsError(String message, StackTrace stackTrace)
       : super(message, stackTrace);
 }
 
-class GetCollectionException extends CloudFirestoreHelperError {
-  GetCollectionException(String message, StackTrace stackTrace)
+class GetCollectionError extends CloudFirestoreHelperError {
+  GetCollectionError(String message, StackTrace stackTrace)
       : super(message, stackTrace);
 }
 
-class GetCollectionGroupException extends CloudFirestoreHelperError {
-  GetCollectionGroupException(String message, StackTrace stackTrace)
+class GetCollectionGroupError extends CloudFirestoreHelperError {
+  GetCollectionGroupError(String message, StackTrace stackTrace)
       : super(message, stackTrace);
 }
 
-class OnlyUseOneException extends CloudFirestoreHelperError {
-  OnlyUseOneException(String message, StackTrace stackTrace)
+class OnlyUseOneError extends CloudFirestoreHelperError {
+  OnlyUseOneError(String message, StackTrace stackTrace)
       : super(message, stackTrace);
 }
 
-class UnableToCombineException extends CloudFirestoreHelperError {
-  UnableToCombineException(StackTrace stackTrace)
+class UnableToCombineError extends CloudFirestoreHelperError {
+  UnableToCombineError(StackTrace stackTrace)
       : super(
             'Can\'t use ArrayContainsAny and ArrayContains clauses in the same query',
             stackTrace);
 }
 
-class ArrayUseException extends CloudFirestoreHelperError {
-  ArrayUseException(StackTrace stackTrace)
+class ArrayUseError extends CloudFirestoreHelperError {
+  ArrayUseError(StackTrace stackTrace)
       : super(
             'Can\'t use ArrayContainsAny and ArrayContains clauses in the same query',
             stackTrace);
 }
 
-class QueryRangeConditionException extends CloudFirestoreHelperError {
-  QueryRangeConditionException(String value, String? key, StackTrace stackTrace)
+class QueryRangeConditionError extends CloudFirestoreHelperError {
+  QueryRangeConditionError(String value, String? key, StackTrace stackTrace)
       : super('Duplicate range: $value condition for key: $key', stackTrace);
 }
 
-class UnknownQueryException extends CloudFirestoreHelperError {
-  UnknownQueryException(String message, StackTrace stackTrace)
+class UnknownQueryError extends CloudFirestoreHelperError {
+  UnknownQueryError(String message, StackTrace stackTrace)
       : super(message, stackTrace);
 }

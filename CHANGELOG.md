@@ -1,3 +1,7 @@
+## [0.0.4] - 5/15/2021
+
+- Add 'getSubcollection' functionality
+
 ## [0.0.3] - 3/29/2021
 
 - Update firestore dependencies
