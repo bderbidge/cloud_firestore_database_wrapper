@@ -3,8 +3,9 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Dart
-
+name: Flutter Workflow
+env:
+  FLUTTER_VERSION: "3.3.5"
 on:
   push:
     branches: ["main", "release/*"]
