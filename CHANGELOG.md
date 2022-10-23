@@ -1,3 +1,8 @@
+## [1.0.2] - 5/15/2021
+
+- Add Base Model for models to inherit from
+- Added model generator functionality.
+
 ## [1.0.1] - 5/15/2021
 
 - Expose 'getSubcollection' through i_data_source interface
