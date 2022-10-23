@@ -1,7 +1,9 @@
 import 'package:cloud_firestore_database_wrapper/exception/exceptions.dart';
 import 'package:cloud_firestore_database_wrapper/interfaces/i_data_source.dart';
 import 'package:cloud_firestore_database_wrapper/src/firestore_data_source.dart';
-import 'package:cloud_firestore_mocks/cloud_firestore_mocks.dart';
+import 'package:cloud_firestore_database_wrapper/util/firestore_parser.dart';
+import 'generate_model.dart';
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'mock_data/mock_user.dart' as mock;
 import 'test_models/address.dart';
@@ -13,8 +15,9 @@ void main() {
   * create a new group otherwise tests will fail due to concurency issues
   */
   group('Mock Firestore methods', () {
-    MockFirestoreInstance instance = MockFirestoreInstance();
-    FirestoreDataSource dataSource = FirestoreDataSource(instance);
+    final instance = FakeFirebaseFirestore();
+    FirestoreDataSource dataSource =
+        FirestoreDataSource(FirestoreParser(generateModel), instance);
     final List<User> users = [];
     final List<Address> addresses = [];
     final path = 'users';
@@ -23,7 +26,7 @@ void main() {
       for (var user in mock.users) {
         var ref = instance.collection(path).doc(user['uid']);
         ref.set(user);
-        users.add(User.fromJSON(user, user['uid']));
+        users.add(User(user));
       }
 
       for (var address in mock.addresses) {
@@ -33,7 +36,7 @@ void main() {
             .collection(addressPath)
             .doc(address['uid']);
         addressref.set(address);
-        addresses.add(Address.fromJSON(address, address['uid']));
+        addresses.add(Address(address));
       }
     });
 
@@ -42,19 +45,20 @@ void main() {
     });
 
     Future<User> createNewUser(String uid) async {
-      final user = User(
-          uid: uid,
-          name: "Bob",
-          photoUrl: "url",
-          email: "example@example.com",
-          phoneNumber: "1234567890",
-          type: 3,
-          date: "12/14/2020",
-          score: 300,
-          userType: []);
+      final user = User({
+        "uid": uid,
+        "name": "Bob",
+        "photoUrl": "url",
+        "email": "example@example.com",
+        "phoneNumber": "1234567890",
+        "type": 3,
+        "date": "12/14/2020",
+        "score": 300,
+        "userType": []
+      });
       await dataSource.create(
         path,
-        user.toJson(),
+        user,
         id: user.uid,
       );
       return user;
@@ -63,7 +67,7 @@ void main() {
     Future<bool> deleteUser(String id) async {
       dataSource.delete(path, id);
       try {
-        await dataSource.getSingleByRefId<User>(path, id, User.fromJSON);
+        await dataSource.getSingleByRefId<User>(path, id);
       } catch (err) {
         if (!(err is GetSingleDocumentError)) {
           throw err;
@@ -76,12 +80,9 @@ void main() {
       try {
         final originaluser = users.first;
         final uid = originaluser.uid;
-        if (uid != null) {
-          User user =
-              await dataSource.getSingleByRefId<User>(path, uid, User.fromJSON);
-          expect(originaluser.toJson(), user.toJson());
-        }
-        throw Error();
+
+        User user = await dataSource.getSingleByRefId<User>(path, uid);
+        expect(originaluser.toJSON(), user.toJSON());
       } catch (err) {
         print(err);
         throw err;
@@ -89,17 +90,17 @@ void main() {
     });
 
     test('get collections', () async {
-      final list = await dataSource.getCollection<User>(path, User.fromJSON);
+      final list = await dataSource.getCollection<User>(path);
       expect(users.length, list.length);
     });
 
     test('get collections with single where param', () async {
       final map = [
         QueryType(
-            id: 'type', value: 1, whereQueryType: WhereQueryType.IsEqualTo)
+            id: 'type', value: 1, whereQueryType: WhereQueryType.isEqualTo)
       ];
-      final list = await dataSource.getCollectionwithParams(path, User.fromJSON,
-          where: map);
+      final list =
+          await dataSource.getCollectionwithParams<User>(path, where: map);
 
       final typeList = users.where((element) => element.type == 1);
       expect(typeList.length, list.length);
@@ -108,15 +109,15 @@ void main() {
     test('get collections with 2 params', () async {
       final map = [
         QueryType(
-            id: 'type', value: [1, 2], whereQueryType: WhereQueryType.WhereIn),
+            id: 'type', value: [1, 2], whereQueryType: WhereQueryType.whereIn),
         QueryType(
             id: 'date',
             value: "12/1/2020",
-            whereQueryType: WhereQueryType.IsEqualTo)
+            whereQueryType: WhereQueryType.isEqualTo)
       ];
 
-      final list = await dataSource.getCollectionwithParams(path, User.fromJSON,
-          where: map);
+      final list =
+          await dataSource.getCollectionwithParams<User>(path, where: map);
 
       final typeList = users.where((element) =>
           (element.type == 1 || element.type == 2) &&
@@ -132,16 +133,16 @@ void main() {
         QueryType(
             id: 'score',
             value: 100,
-            whereQueryType: WhereQueryType.IsGreaterThan),
+            whereQueryType: WhereQueryType.isGreaterThan),
         QueryType(
             id: 'score',
             value: 400,
-            whereQueryType: WhereQueryType.IsLessThanOrEqualTo),
+            whereQueryType: WhereQueryType.isLessThanOrEqualTo),
       ];
 
       try {
-        final validList = await dataSource
-            .getCollectionwithParams(path, User.fromJSON, where: validMap);
+        final validList = await dataSource.getCollectionwithParams<User>(path,
+            where: validMap);
         final typeList = users.where(
             (element) => (element.score! > 100) && (element.score! <= 400));
         expect(typeList.length, validList.length);
@@ -153,14 +154,14 @@ void main() {
 
         final invalidMap = [
           QueryType(
-              id: 'type', value: 3, whereQueryType: WhereQueryType.IsLessThan),
+              id: 'type', value: 3, whereQueryType: WhereQueryType.isLessThan),
           QueryType(
               id: 'score',
               value: 100,
-              whereQueryType: WhereQueryType.IsGreaterThanOrEqualTo)
+              whereQueryType: WhereQueryType.isGreaterThanOrEqualTo)
         ];
-        final invalidlist = await dataSource
-            .getCollectionwithParams(path, User.fromJSON, where: invalidMap);
+        final invalidlist = await dataSource.getCollectionwithParams<User>(path,
+            where: invalidMap);
         expect(null, invalidlist);
       } catch (err) {
         var isCorrectType = err is QueryRangeConditionError;
@@ -172,17 +173,18 @@ void main() {
       try {
         final user = await createNewUser(users.length.toString());
 
-        User createdUser = await dataSource.getSingleByRefId<User>(
-            path, user.uid!, User.fromJSON);
-        expect(user.toJson(), createdUser.toJson());
+        User createdUser =
+            await dataSource.getSingleByRefId<User>(path, user.uid);
+        expect(user.toJSON(), createdUser.toJSON());
 
         var email = "example2@example.com";
-        await dataSource.update(path, createdUser.uid!, {"email": email});
-        final updatedUser = await dataSource.getSingleByRefId<User>(
-            path, createdUser.uid!, User.fromJSON);
+        createdUser.email = email;
+        await dataSource.update(path, createdUser.uid, createdUser);
+        final updatedUser =
+            await dataSource.getSingleByRefId<User>(path, createdUser.uid);
         expect(email, updatedUser.email);
 
-        final deleted = await deleteUser(user.uid!);
+        final deleted = await deleteUser(user.uid);
         expect(true, deleted);
       } catch (err) {
         print(err);
@@ -195,10 +197,10 @@ void main() {
         QueryType(
             id: 'city',
             value: "Los Angeles",
-            whereQueryType: WhereQueryType.IsEqualTo)
+            whereQueryType: WhereQueryType.isEqualTo)
       ];
       var addresses = await dataSource.getSubCollection<Address>(
-          [path, addressPath], [users.first.uid!], Address.fromJSON,
+          [path, addressPath], [users.first.uid],
           where: map);
       expect(addresses.length, 6);
     });
@@ -209,15 +211,11 @@ void main() {
           QueryType(
               id: 'city',
               value: "Los Angeles",
-              whereQueryType: WhereQueryType.IsEqualTo)
+              whereQueryType: WhereQueryType.isEqualTo)
         ];
-        var addresses = await dataSource.getSubCollection<Address>([
-          path,
-          addressPath
-        ], [
-          users.first.uid!,
-          users.last.uid!
-        ], Address.fromJSON, where: map);
+        var addresses = await dataSource.getSubCollection<Address>(
+            [path, addressPath], [users.first.uid, users.last.uid],
+            where: map);
         expect(addresses, null);
       } catch (err) {
         var isCorrectType = err is GetCollectionGroupError;

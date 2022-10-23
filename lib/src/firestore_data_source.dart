@@ -1,40 +1,48 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore_database_wrapper/exception/exceptions.dart';
+import 'package:cloud_firestore_database_wrapper/src/base_model.dart';
 import 'package:cloud_firestore_database_wrapper/util/check_query_constructor.dart';
+import 'package:cloud_firestore_database_wrapper/util/firestore_parser.dart';
+
 import "dart:async";
-import '../exception/exceptions.dart';
+
 import '../interfaces/i_data_source.dart';
-import '../util/firestore_parser.dart';
 
 // Cloud Firestore
 class FirestoreDataSource implements IDataSource {
-  FirestoreDataSource(FirebaseFirestore db) : _db = db;
-  final FirebaseFirestore _db;
+  FirestoreParser parser;
+  FirestoreDataSource(this.parser, this.db);
+  final FirebaseFirestore db;
 
-  Future<T> getSingleByRefId<T>(
-      String path, String id, FromJson fromJson) async {
+  @override
+  Future<Model> getSingleByRefId<Model extends BaseModel>(
+      String path, String id) async {
     try {
       var ref = firestoreRef(path, id);
-      var parser = FirestoreParser<T>();
       var document = await ref.get();
-      return parser.parseIndividual(document, fromJson);
+      return parser.parseIndividual<Model>(document);
     } catch (err, s) {
       throw GetSingleDocumentError(err.toString(), s);
     }
   }
 
-  Future<List<T>> getCollection<T>(String path, FromJson fromJson) async {
+  @override
+  Future<List<Model>> getCollection<Model extends BaseModel>(
+      String path) async {
     try {
-      var collectionReference = _db.collection(path);
+      var collectionReference = db.collection(path);
       var snapshots = collectionReference
           .get()
-          .then((snapshot) => FirestoreParser<T>().parse(snapshot, fromJson));
+          .then((snapshot) => parser.parse<Model>(snapshot));
       return snapshots;
     } catch (err, s) {
       throw GetCollectionError(err.toString(), s);
     }
   }
 
-  Future<List<T>> getCollectionwithParams<T>(String path, FromJson fromJson,
+  @override
+  Future<List<Model>> getCollectionwithParams<Model extends BaseModel>(
+      String path,
       {List<QueryType>? where,
       Map<String, bool>? orderby,
       int? limit,
@@ -47,24 +55,35 @@ class FirestoreDataSource implements IDataSource {
       if (startAfterID != null) {
         startAfter = await firestoreRef(path, startAfterID).get();
       }
-      Query query = _db.collection(path);
-      var collectionReference = queryConstruction(query,
+      var pathParam = path.split("/");
+      var collection = db.collection(pathParam.removeAt(0));
+      for (var i = 0; i < pathParam.length; i += 2) {
+        if (i % 2 == 0 && i < pathParam.length - 1) {
+          //collection
+          collection =
+              collection.doc(pathParam[i]).collection(pathParam[i + 1]);
+        }
+      }
+      var collectionReference = queryConstruction(collection,
           where: where, orderby: orderby, limit: limit, startAfter: startAfter);
       var doc = await collectionReference.get();
-      return FirestoreParser<T>().parse(doc, fromJson);
+      return parser.parse<Model>(doc);
     } catch (err, s) {
       throw CollectionWithParamsError(err.toString(), s);
     }
   }
 
-  Stream<List<T>> getCollectionStreamWithParams<T>(
-      String path, FromJson fromJson,
-      {List<QueryType>? where, Map<String, bool>? orderby, int? limit}) {
+  @override
+  Stream<List<Model>> getCollectionStreamWithParams<Model extends BaseModel>(
+      String path,
+      {List<QueryType>? where,
+      Map<String, bool>? orderby,
+      int? limit}) {
     if (where != null) {
       where = checkQueryConstructor(where);
     }
     try {
-      Query query = _db.collection(path);
+      Query query = db.collection(path);
       var collectionReference = queryConstruction(
         query,
         where: where,
@@ -72,8 +91,7 @@ class FirestoreDataSource implements IDataSource {
         limit: limit,
       );
       Stream<QuerySnapshot> snapshots = collectionReference.snapshots();
-      return snapshots
-          .map((snapshot) => FirestoreParser<T>().parse(snapshot, fromJson));
+      return snapshots.map((snapshot) => parser.parse<Model>(snapshot));
     } catch (err, s) {
       throw CollectionStreamWithParamsError(err.toString(), s);
     }
@@ -87,37 +105,37 @@ class FirestoreDataSource implements IDataSource {
     try {
       where?.forEach((value) {
         switch (value.whereQueryType) {
-          case WhereQueryType.IsEqualTo:
+          case WhereQueryType.isEqualTo:
             query = query.where(value.id, isEqualTo: value.value);
             break;
-          case WhereQueryType.IsLessThan:
+          case WhereQueryType.isLessThan:
             query = query.where(value.id, isLessThan: value.value);
             break;
-          case WhereQueryType.IsLessThanOrEqualTo:
+          case WhereQueryType.isLessThanOrEqualTo:
             query = query.where(value.id, isLessThanOrEqualTo: value.value);
             break;
-          case WhereQueryType.IsGreaterThan:
+          case WhereQueryType.isGreaterThan:
             query = query.where(value.id, isGreaterThan: value.value);
             break;
-          case WhereQueryType.IsGreaterThanOrEqualTo:
+          case WhereQueryType.isGreaterThanOrEqualTo:
             query = query.where(value.id, isGreaterThanOrEqualTo: value.value);
             break;
-          case WhereQueryType.ArrayContains:
+          case WhereQueryType.arrayContains:
             query = query.where(value.id, arrayContains: value.value);
             break;
-          case WhereQueryType.ArrayContainsAny:
+          case WhereQueryType.arrayContainsAny:
             query = query.where(value.id, arrayContainsAny: value.value);
             break;
-          case WhereQueryType.WhereIn:
+          case WhereQueryType.whereIn:
             query = query.where(value.id, whereIn: value.value);
             break;
-          case WhereQueryType.WhereNotIn:
+          case WhereQueryType.whereNotIn:
             query = query.where(value.id, whereNotIn: value.value);
             break;
-          case WhereQueryType.IsNull:
+          case WhereQueryType.isNull:
             query = query.where(value.id, isNull: value.value);
             break;
-          case WhereQueryType.IsNotEqualTo:
+          case WhereQueryType.isNotEqualTo:
             query = query.where(value.id, isNotEqualTo: value.value);
             break;
           default:
@@ -149,14 +167,14 @@ class FirestoreDataSource implements IDataSource {
 
   //Post functions
 
-  Future<String> create(String path, Map<String, dynamic> data,
-      {String? id}) async {
+  @override
+  Future<String> create(String path, BaseModel data, {String? id}) async {
     try {
       if (id != null) {
-        firestoreRef(path, id).set(data);
+        await firestoreRef(path, id).set(data.toJSON());
         return id;
       } else {
-        var ref = await _db.collection(path).add(data);
+        var ref = await db.collection(path).add(data.toJSON());
         return ref.id;
       }
     } catch (err, s) {
@@ -164,21 +182,75 @@ class FirestoreDataSource implements IDataSource {
     }
   }
 
-  addDocToSubcollection(
-      DocumentReference ref, String collectionPath, Map<String, dynamic> data) {
-    ref.collection(collectionPath).add(data);
+  @override
+  Future<String> addDocToSubcollection<Model extends BaseModel>(
+      String path, BaseModel data) async {
+    var pathParam = path.split("/");
+
+    var collection = db.collection(pathParam.removeAt(0));
+    if (pathParam.isEmpty) {
+      var ref = await collection.add(data.toJSON());
+      return ref.id;
+    }
+
+    for (var i = 0; i < pathParam.length; i += 2) {
+      if (i % 2 == 0 && i < pathParam.length - 1) {
+        //collection
+        collection = collection.doc(pathParam[i]).collection(pathParam[i + 1]);
+      }
+    }
+
+    var ref = await collection.add(data.toJSON());
+    return ref.id;
+  }
+
+  @override
+  Stream<Model> getStreamByID<Model extends BaseModel>(
+    String path,
+    String id,
+  ) {
+    var pathParam = path.split("/");
+
+    var collection = db.collection(pathParam.removeAt(0));
+    for (var i = 0; i < pathParam.length; i += 2) {
+      if (i % 2 == 0 && i < pathParam.length - 1) {
+        //collection
+        collection = collection.doc(pathParam[i]).collection(pathParam[i + 1]);
+      }
+    }
+    var snapshot = collection.doc(id).snapshots();
+    return snapshot.map((doc) => parser.parseIndividual<Model>(doc));
+  }
+
+  @override
+  Stream<List<Model>> getStreamWhere<Model extends BaseModel>(
+      String path, String name, num status) {
+    var pathParam = path.split("/");
+
+    var collection = db.collection(pathParam.removeAt(0));
+    for (var i = 0; i < pathParam.length; i += 2) {
+      if (i % 2 == 0 && i < pathParam.length - 1) {
+        //collection
+        collection = collection.doc(pathParam[i]).collection(pathParam[i + 1]);
+      }
+    }
+    Stream<QuerySnapshot> snapshots =
+        collection.where(name, isLessThanOrEqualTo: status).snapshots();
+    return snapshots.map((snapshot) => parser.parse<Model>(snapshot));
   }
 
   //Put functions
 
-  Future<Null> update(String path, String id, Map<String, dynamic> data) async {
+  @override
+  Future<void> update(String path, String id, BaseModel data) async {
     try {
-      await firestoreRef(path, id).update(data);
+      await firestoreRef(path, id).update(data.toJSON());
     } catch (err, s) {
       throw UpdateSingleError(err.toString(), s);
     }
   }
 
+  @override
   updateDocSubcollection(DocumentReference ref, Map<String, dynamic> data) {
     try {
       ref.update(data);
@@ -189,6 +261,7 @@ class FirestoreDataSource implements IDataSource {
 
   //Delete functions
 
+  @override
   delete(String path, String id) {
     try {
       firestoreRef(path, id).delete();
@@ -197,16 +270,17 @@ class FirestoreDataSource implements IDataSource {
     }
   }
 
-  DocumentReference firestoreRef(String path, String id) {
+  DocumentReference<Map<String, dynamic>> firestoreRef(String path, String id) {
     try {
-      return _db.collection(path).doc(id);
+      return db.collection(path).doc(id);
     } catch (err, s) {
       throw FirestoreReferenceError(err.toString(), s);
     }
   }
 
-  Future<List<T>> getSubCollection<T>(
-      List<String> paths, List<String> ids, FromJson fromJson,
+  @override
+  Future<List<Model>> getSubCollection<Model extends BaseModel>(
+      List<String> paths, List<String> ids,
       {List<QueryType>? where, Map<String, bool>? orderby, int? limit}) async {
     if (where != null) {
       where = checkQueryConstructor(where);
@@ -218,7 +292,7 @@ class FirestoreDataSource implements IDataSource {
           StackTrace.current);
     }
     try {
-      CollectionReference cr = _db.collection(paths[0]);
+      CollectionReference cr = db.collection(paths[0]);
       DocumentReference doc = cr.doc(ids[0]);
       paths.removeAt(0);
       ids.removeAt(0);
@@ -233,7 +307,7 @@ class FirestoreDataSource implements IDataSource {
       var collectionReference = queryConstruction(query,
           where: where, orderby: orderby, limit: limit);
       var docs = await collectionReference.get();
-      return FirestoreParser<T>().parse(docs, fromJson);
+      return parser.parse<Model>(docs);
     } catch (err, s) {
       throw GetCollectionGroupError(err.toString(), s);
     }

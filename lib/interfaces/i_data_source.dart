@@ -1,29 +1,30 @@
 import "dart:async";
 
-import 'package:cloud_firestore_database_wrapper/util/firestore_parser.dart';
+import 'package:cloud_firestore_database_wrapper/src/base_model.dart';
 
 enum WhereQueryType {
-  IsEqualTo,
-  IsLessThan,
-  IsLessThanOrEqualTo,
-  IsGreaterThan,
-  IsGreaterThanOrEqualTo,
-  ArrayContains,
-  ArrayContainsAny,
-  WhereIn,
-  WhereNotIn,
-  IsNull,
-  IsNotEqualTo,
+  isEqualTo,
+  isLessThan,
+  isLessThanOrEqualTo,
+  isGreaterThan,
+  isGreaterThanOrEqualTo,
+  arrayContains,
+  arrayContainsAny,
+  whereIn,
+  whereNotIn,
+  isNull,
+  isNotEqualTo,
 }
 
 final Set<WhereQueryType> queryRange = {
-  WhereQueryType.IsLessThan,
-  WhereQueryType.IsLessThanOrEqualTo,
-  WhereQueryType.IsGreaterThan,
-  WhereQueryType.IsGreaterThanOrEqualTo,
+  WhereQueryType.isLessThan,
+  WhereQueryType.isLessThanOrEqualTo,
+  WhereQueryType.isGreaterThan,
+  WhereQueryType.isGreaterThanOrEqualTo,
 };
 
 class QueryType {
+  // ignore: prefer_typing_uninitialized_variables
   final id;
   final dynamic value;
   final WhereQueryType? whereQueryType;
@@ -33,25 +34,37 @@ class QueryType {
 abstract class IDataSource {
   delete(String path, String id);
 
-  update(String path, String id, Map<String, dynamic> data);
+  update(String path, String id, BaseModel data);
 
-  Future<String> create(String path, Map<String, dynamic> data, {String? id});
+  Future<String> create(String path, BaseModel data, {String? id});
 
-  Future<T> getSingleByRefId<T>(String path, String id, FromJson fromJson);
+  Future<Model> getSingleByRefId<Model extends BaseModel>(
+      String path, String id);
 
-  Future<List<T>> getCollection<T>(String path, FromJson fromJson);
+  Future<List<Model>> getCollection<Model extends BaseModel>(String path);
 
-  Future<List<T>> getCollectionwithParams<T>(String path, FromJson fromJson,
+  Future<List<Model>> getCollectionwithParams<Model extends BaseModel>(
+      String path,
       {List<QueryType>? where,
       Map<String, bool>? orderby,
       int? limit,
       String? startAfterID});
 
-  Stream<List<T>> getCollectionStreamWithParams<T>(
-      String path, FromJson fromJson,
+  Stream<List<Model>> getCollectionStreamWithParams<Model extends BaseModel>(
+      String path,
+      {List<QueryType>? where,
+      Map<String, bool>? orderby,
+      int? limit});
+
+  Stream<Model> getStreamByID<Model extends BaseModel>(String path, String id);
+
+  Future<List<Model>> getSubCollection<Model extends BaseModel>(
+      List<String> paths, List<String> ids,
       {List<QueryType>? where, Map<String, bool>? orderby, int? limit});
 
-  Future<List<T>> getSubCollection<T>(
-      List<String> paths, List<String> ids, FromJson fromJson,
-      {List<QueryType>? where, Map<String, bool>? orderby, int? limit});
+  Future<String> addDocToSubcollection<Model extends BaseModel>(
+      String path, BaseModel data);
+
+  Stream<List<Model>> getStreamWhere<Model extends BaseModel>(
+      String path, String name, num status);
 }

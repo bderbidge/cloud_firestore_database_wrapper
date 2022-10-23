@@ -1,62 +1,33 @@
-class Address {
-  final String? uid;
+import 'package:cloud_firestore_database_wrapper/src/base_model.dart';
+
+class Address extends BaseModel {
   final String? street;
   final String? city;
   final String? state;
   final int? zip;
 
-  Address({
-    this.uid,
-    this.street,
-    this.state,
-    this.city,
-    this.zip,
-  });
+  Address(json)
+      : street = json["street"],
+        city = json["city"],
+        state = json["state"],
+        zip = json["zip"],
+        super(json, json["uid"]);
 
-  static Address fromJSON(Map<String, dynamic>? json, String id) {
-    if (json == null) {
-      return Address();
-    }
-    List<dynamic>? properties = [];
-    List<String> propertyRefs = [];
-    if (json.containsKey('properties')) {
-      properties = json['properties'];
-      for (String string in properties as Iterable<String>) {
-        propertyRefs.add(string);
-      }
-    }
-    return Address(
-      uid: json['uid'] as String?,
-      street: json['street'] as String?,
-      state: json['state'] as String?,
-      city: json['city'] as String?,
-      zip: json['zip'] as int?,
-    );
-  }
-
-  Address copyWith(
-      {String? uid,
-      String? street,
-      String? city,
-      String? state,
-      String? phoneNumber,
-      int? zip,
-      int? score,
-      String? date,
-      List? userzip}) {
-    return Address(
-        uid: uid ?? this.uid,
-        street: street ?? this.street,
-        city: city ?? this.city,
-        state: state ?? this.state,
-        zip: zip ?? this.zip);
-  }
-
-  Map<String, dynamic> toJson() => {
+  Map<String, dynamic> toJSON() => {
         'uid': uid,
         'street': street,
         'state': state,
         'city': city,
         'zip': zip,
       };
+
+  @override
+  String? getId() {
+    return uid;
+  }
+
+  @override
+  String getPath() {
+    return "Address";
+  }
 }
