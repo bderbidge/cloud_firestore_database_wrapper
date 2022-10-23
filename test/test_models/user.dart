@@ -1,74 +1,28 @@
-class User {
-  final String? uid;
+import 'package:cloud_firestore_database_wrapper/src/base_model.dart';
+
+class User extends BaseModel {
   final String? name;
   final String? photoUrl;
-  final String? email;
+  String? email;
   final String? phoneNumber;
   final String? date;
   final int? type;
   final int? score;
   final List? userType;
 
-  User({
-    this.uid,
-    this.name,
-    this.email,
-    this.phoneNumber,
-    this.photoUrl,
-    this.type,
-    this.score,
-    this.date,
-    this.userType,
-  });
+  User(
+    Map<String, dynamic> json,
+  )   : name = json["name"],
+        email = json["email"],
+        phoneNumber = json["phoneNumber"],
+        photoUrl = json["photoUrl"],
+        type = json["type"],
+        score = json["score"],
+        date = json["date"],
+        userType = json["userType"],
+        super(json, json["uid"]);
 
-  static User fromJSON(Map<String, dynamic>? json, String id) {
-    if (json == null) {
-      return User();
-    }
-    List<dynamic>? properties = [];
-    List<String> propertyRefs = [];
-    if (json.containsKey('properties')) {
-      properties = json['properties'];
-      for (String string in properties as Iterable<String>) {
-        propertyRefs.add(string);
-      }
-    }
-    return User(
-      uid: json['uid'] as String?,
-      name: json['name'] as String?,
-      email: json['email'] as String?,
-      phoneNumber: json['phoneNumber'] as String?,
-      photoUrl: json['photoUrl'] as String?,
-      type: json['type'] as int?,
-      score: json['score'] as int?,
-      date: json['date'] as String?,
-      userType: [],
-    );
-  }
-
-  User copyWith(
-      {String? uid,
-      String? name,
-      String? photoUrl,
-      String? email,
-      String? phoneNumber,
-      int? type,
-      int? score,
-      String? date,
-      List? userType}) {
-    return User(
-        uid: uid ?? this.uid,
-        name: name ?? this.name,
-        photoUrl: photoUrl ?? this.photoUrl,
-        email: email ?? this.email,
-        phoneNumber: phoneNumber ?? this.phoneNumber,
-        type: type ?? this.type,
-        score: score ?? this.score,
-        date: date ?? this.date,
-        userType: userType ?? this.userType);
-  }
-
-  Map<String, dynamic> toJson() => {
+  Map<String, dynamic> toJSON() => {
         'uid': uid,
         'name': name,
         'email': email,
@@ -79,4 +33,14 @@ class User {
         'date': date,
         'userType': userType,
       };
+
+  @override
+  String getId() {
+    return uid;
+  }
+
+  @override
+  String getPath() {
+    return "users";
+  }
 }

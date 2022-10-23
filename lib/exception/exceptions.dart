@@ -87,3 +87,8 @@ class UnknownQueryError extends CloudFirestoreHelperError {
   UnknownQueryError(String message, StackTrace stackTrace)
       : super(message, stackTrace);
 }
+
+class ModelNotFoundError extends CloudFirestoreHelperError {
+  ModelNotFoundError(String message, StackTrace stackTrace)
+      : super(message, stackTrace);
+}

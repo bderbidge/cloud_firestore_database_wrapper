@@ -1,10 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_firestore_database_wrapper/src/firestore_data_source.dart';
+import 'package:cloud_firestore_database_wrapper/util/firestore_parser.dart';
+import '../test/generate_model.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../test/mock_data/mock_user.dart' as mockusers;
-import '../test//test_models/user.dart';
+import '../test/test_models/user.dart';
 
 Future<void> main() async {
   // Pass all uncaught errors to Crashlytics.
@@ -32,8 +33,8 @@ class MyAppState extends State<MyApp> {
   List<User> _data = [];
   final path = 'users';
   final FirebaseFirestore finstance = FirebaseFirestore.instance;
-  final FirestoreDataSource dataSource =
-      FirestoreDataSource(FirebaseFirestore.instance);
+  final FirestoreDataSource dataSource = FirestoreDataSource(
+      FirestoreParser(generateModel), FirebaseFirestore.instance);
   num index = 0;
 
   @override
@@ -43,7 +44,7 @@ class MyAppState extends State<MyApp> {
       ref.set(user);
       index++;
     }
-    _data = await dataSource.getCollection<User>(path, User.fromJSON);
+    _data = await dataSource.getCollection<User>(path);
     super.initState();
   }
 
@@ -106,20 +107,19 @@ class MyAppState extends State<MyApp> {
     int insertIndex = 2;
     // Add the item to the data list.
     var date = DateTime.now();
-    var user = User(
-        date: date.toString(),
-        email: "example@example.com",
-        name: "John",
-        photoUrl: "url",
-        phoneNumber: "1234567890",
-        type: 3,
-        userType: [],
-        score: 100);
-    dataSource.create(
-      path,
-      user.toJson(),
-      id: index.toString(),
-    );
+
+    var json = {
+      "date": date.toString(),
+      "email": "example@example.com",
+      "name": "John",
+      "photoUrl": "url",
+      "phoneNumber": "1234567890",
+      "type": 3,
+      "userType": [],
+      "score": 100
+    };
+    var user = User(json);
+    dataSource.create(path, user);
     _data.insert(insertIndex, user);
   }
 
@@ -128,10 +128,9 @@ class MyAppState extends State<MyApp> {
     // Remove item from data list but keep copy to give to the animation.
     User removedItem = _data.removeAt(removeIndex);
     var uid = removedItem.uid;
-    if (uid != null) {
-      dataSource.delete(path, uid);
-      // This builder is just for showing the row while it is still
-      // animating away. The item is already gone from the data list.
-    }
+
+    dataSource.delete(path, uid);
+    // This builder is just for showing the row while it is still
+    // animating away. The item is already gone from the data list.
   }
 }
