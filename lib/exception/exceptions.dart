@@ -92,3 +92,8 @@ class ModelNotFoundError extends CloudFirestoreHelperError {
   ModelNotFoundError(String message, StackTrace stackTrace)
       : super(message, stackTrace);
 }
+
+class IsNotDocException extends CloudFirestoreHelperError {
+  IsNotDocException(String message, StackTrace stackTrace)
+      : super(message, stackTrace);
+}

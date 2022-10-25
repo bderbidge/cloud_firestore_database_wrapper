@@ -44,7 +44,7 @@ class MyAppState extends State<MyApp> {
       ref.set(user);
       index++;
     }
-    _data = await dataSource.getCollection<User>(path);
+    _data = await dataSource.getCollectionwithParams<User>(path);
     super.initState();
   }
 
@@ -119,7 +119,7 @@ class MyAppState extends State<MyApp> {
       "score": 100
     };
     var user = User(json);
-    dataSource.create(path, user);
+    dataSource.addDocToCollection(path, user);
     _data.insert(insertIndex, user);
   }
 
@@ -129,7 +129,7 @@ class MyAppState extends State<MyApp> {
     User removedItem = _data.removeAt(removeIndex);
     var uid = removedItem.uid;
 
-    dataSource.delete(path, uid);
+    dataSource.delete(path + "/" + uid);
     // This builder is just for showing the row while it is still
     // animating away. The item is already gone from the data list.
   }

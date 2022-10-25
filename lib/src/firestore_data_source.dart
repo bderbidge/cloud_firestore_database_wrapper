@@ -14,31 +14,45 @@ class FirestoreDataSource implements IDataSource {
   FirestoreDataSource(this.parser, this.db);
   final FirebaseFirestore db;
 
+  // Get Single Documents
+
   @override
-  Future<Model> getSingleByRefId<Model extends BaseModel>(
-      String path, String id) async {
+  Future<Model> getSingleById<Model extends BaseModel>(
+    String path,
+  ) async {
     try {
-      var ref = firestoreRef(path, id);
-      var document = await ref.get();
-      return parser.parseIndividual<Model>(document);
+      var pathParam = path.split("/");
+      var collection = collectionPath(pathParam);
+
+      if (pathParam.length.isOdd) {
+        var document = await collection.doc(pathParam.removeAt(0)).get();
+        return parser.parseIndividual<Model>(document);
+      } else {
+        throw IsNotDocException(
+            "Path does not end in a doc id", StackTrace.current);
+      }
     } catch (err, s) {
       throw GetSingleDocumentError(err.toString(), s);
     }
   }
 
   @override
-  Future<List<Model>> getCollection<Model extends BaseModel>(
-      String path) async {
-    try {
-      var collectionReference = db.collection(path);
-      var snapshots = collectionReference
-          .get()
-          .then((snapshot) => parser.parse<Model>(snapshot));
-      return snapshots;
-    } catch (err, s) {
-      throw GetCollectionError(err.toString(), s);
+  Stream<Model> getStreamByID<Model extends BaseModel>(
+    String path,
+  ) {
+    var pathParam = path.split("/");
+    var collection = collectionPath(pathParam);
+
+    if (pathParam.length.isOdd) {
+      var snapshot = collection.doc(pathParam.removeAt(0)).snapshots();
+      return snapshot.map((doc) => parser.parseIndividual<Model>(doc));
+    } else {
+      throw IsNotDocException(
+          "Path does not end in a doc id", StackTrace.current);
     }
   }
+
+  // Get collections
 
   @override
   Future<List<Model>> getCollectionwithParams<Model extends BaseModel>(
@@ -47,55 +61,121 @@ class FirestoreDataSource implements IDataSource {
       Map<String, bool>? orderby,
       int? limit,
       String? startAfterID}) async {
+    var pathParam = path.split("/");
+
+    if (pathParam.length.isEven) {
+      throw GetCollectionGroupError(
+          "number of ids must be less than paths for subcollection",
+          StackTrace.current);
+    }
+
     if (where != null) {
       where = checkQueryConstructor(where);
     }
+
     try {
       DocumentSnapshot? startAfter;
       if (startAfterID != null) {
-        startAfter = await firestoreRef(path, startAfterID).get();
+        // startAfter = await firestoreRef(path, startAfterID).get();
       }
-      var pathParam = path.split("/");
-      var collection = db.collection(pathParam.removeAt(0));
-      for (var i = 0; i < pathParam.length; i += 2) {
-        if (i % 2 == 0 && i < pathParam.length - 1) {
-          //collection
-          collection =
-              collection.doc(pathParam[i]).collection(pathParam[i + 1]);
-        }
-      }
+
+      var collection = collectionPath(pathParam);
+
       var collectionReference = queryConstruction(collection,
           where: where, orderby: orderby, limit: limit, startAfter: startAfter);
-      var doc = await collectionReference.get();
-      return parser.parse<Model>(doc);
+      var query = await collectionReference.get();
+      return parser.parse<Model>(query);
     } catch (err, s) {
       throw CollectionWithParamsError(err.toString(), s);
     }
   }
 
   @override
-  Stream<List<Model>> getCollectionStreamWithParams<Model extends BaseModel>(
-      String path,
-      {List<QueryType>? where,
-      Map<String, bool>? orderby,
-      int? limit}) {
+  Stream<List<Model>> getCollectionStream<Model extends BaseModel>(
+    String path, {
+    List<QueryType>? where,
+    Map<String, bool>? orderby,
+    int? limit,
+  }) {
+    var pathParam = path.split("/");
+    if (pathParam.length.isEven) {
+      throw GetCollectionGroupError(
+          "number of ids must be less than paths for subcollection",
+          StackTrace.current);
+    }
+
+    Query query = collectionPath(pathParam);
     if (where != null) {
       where = checkQueryConstructor(where);
     }
-    try {
-      Query query = db.collection(path);
-      var collectionReference = queryConstruction(
-        query,
-        where: where,
-        orderby: orderby,
-        limit: limit,
-      );
-      Stream<QuerySnapshot> snapshots = collectionReference.snapshots();
-      return snapshots.map((snapshot) => parser.parse<Model>(snapshot));
-    } catch (err, s) {
-      throw CollectionStreamWithParamsError(err.toString(), s);
+
+    var collection = queryConstruction(
+      query,
+      where: where,
+      orderby: orderby,
+      limit: limit,
+    );
+    Stream<QuerySnapshot> snapshots = collection.snapshots();
+    return snapshots.map((snapshot) => parser.parse<Model>(snapshot));
+  }
+
+  //Post functions
+
+  @override
+  Future<String> addDocToCollection<Model extends BaseModel>(
+      String path, BaseModel data) async {
+    var pathParam = path.split("/");
+    var collection = collectionPath(pathParam);
+
+    if (!pathParam.length.isOdd) {
+      var ref = await collection.add(data.toJSON());
+      return ref.id;
+    } else {
+      var id = pathParam.removeAt(0);
+      await collection.doc(id).set(data.toJSON());
+      return id;
     }
   }
+
+  //Put functions
+
+  @override
+  Future<void> update(String path, BaseModel data) async {
+    try {
+      var pathParam = path.split("/");
+      var collection = collectionPath(pathParam);
+
+      if (pathParam.length.isOdd) {
+        await collection.doc(pathParam.removeAt(0)).update(data.toJSON());
+      } else {
+        throw IsNotDocException(
+            "Path does not end in a doc id", StackTrace.current);
+      }
+    } catch (err, s) {
+      throw UpdateSingleError(err.toString(), s);
+    }
+  }
+
+  //Delete functions
+
+  @override
+  delete(String path) {
+    try {
+      var pathParam = path.split("/");
+      var collection = collectionPath(pathParam);
+
+      if (pathParam.length.isOdd) {
+        collection.doc(pathParam.removeAt(0)).delete();
+      } else {
+        throw IsNotDocException(
+            "Path does not end in a doc id", StackTrace.current);
+      }
+    } catch (err, s) {
+      throw DeleteSingleError(err.toString(), s);
+    }
+  }
+
+  // Helpers
 
   Query queryConstruction(Query query,
       {List<QueryType>? where,
@@ -165,151 +245,18 @@ class FirestoreDataSource implements IDataSource {
     }
   }
 
-  //Post functions
-
-  @override
-  Future<String> create(String path, BaseModel data, {String? id}) async {
-    try {
-      if (id != null) {
-        await firestoreRef(path, id).set(data.toJSON());
-        return id;
-      } else {
-        var ref = await db.collection(path).add(data.toJSON());
-        return ref.id;
-      }
-    } catch (err, s) {
-      throw CreateSingleError(err.toString(), s);
-    }
-  }
-
-  @override
-  Future<String> addDocToSubcollection<Model extends BaseModel>(
-      String path, BaseModel data) async {
-    var pathParam = path.split("/");
-
-    var collection = db.collection(pathParam.removeAt(0));
-    if (pathParam.isEmpty) {
-      var ref = await collection.add(data.toJSON());
-      return ref.id;
-    }
-
-    for (var i = 0; i < pathParam.length; i += 2) {
-      if (i % 2 == 0 && i < pathParam.length - 1) {
-        //collection
-        collection = collection.doc(pathParam[i]).collection(pathParam[i + 1]);
-      }
-    }
-
-    var ref = await collection.add(data.toJSON());
-    return ref.id;
-  }
-
-  @override
-  Stream<Model> getStreamByID<Model extends BaseModel>(
-    String path,
-    String id,
-  ) {
-    var pathParam = path.split("/");
-
+  CollectionReference<Map<String, dynamic>> collectionPath(
+      List<String> pathParam) {
     var collection = db.collection(pathParam.removeAt(0));
     for (var i = 0; i < pathParam.length; i += 2) {
       if (i % 2 == 0 && i < pathParam.length - 1) {
         //collection
-        collection = collection.doc(pathParam[i]).collection(pathParam[i + 1]);
+        var document = pathParam.removeAt(0);
+        var col = pathParam.removeAt(0);
+        collection = collection.doc(document).collection(col);
       }
     }
-    var snapshot = collection.doc(id).snapshots();
-    return snapshot.map((doc) => parser.parseIndividual<Model>(doc));
-  }
 
-  @override
-  Stream<List<Model>> getStreamWhere<Model extends BaseModel>(
-      String path, String name, num status) {
-    var pathParam = path.split("/");
-
-    var collection = db.collection(pathParam.removeAt(0));
-    for (var i = 0; i < pathParam.length; i += 2) {
-      if (i % 2 == 0 && i < pathParam.length - 1) {
-        //collection
-        collection = collection.doc(pathParam[i]).collection(pathParam[i + 1]);
-      }
-    }
-    Stream<QuerySnapshot> snapshots =
-        collection.where(name, isLessThanOrEqualTo: status).snapshots();
-    return snapshots.map((snapshot) => parser.parse<Model>(snapshot));
-  }
-
-  //Put functions
-
-  @override
-  Future<void> update(String path, String id, BaseModel data) async {
-    try {
-      await firestoreRef(path, id).update(data.toJSON());
-    } catch (err, s) {
-      throw UpdateSingleError(err.toString(), s);
-    }
-  }
-
-  @override
-  updateDocSubcollection(DocumentReference ref, Map<String, dynamic> data) {
-    try {
-      ref.update(data);
-    } catch (err, s) {
-      throw UpdateSingleError(err.toString(), s);
-    }
-  }
-
-  //Delete functions
-
-  @override
-  delete(String path, String id) {
-    try {
-      firestoreRef(path, id).delete();
-    } catch (err, s) {
-      throw DeleteSingleError(err.toString(), s);
-    }
-  }
-
-  DocumentReference<Map<String, dynamic>> firestoreRef(String path, String id) {
-    try {
-      return db.collection(path).doc(id);
-    } catch (err, s) {
-      throw FirestoreReferenceError(err.toString(), s);
-    }
-  }
-
-  @override
-  Future<List<Model>> getSubCollection<Model extends BaseModel>(
-      List<String> paths, List<String> ids,
-      {List<QueryType>? where, Map<String, bool>? orderby, int? limit}) async {
-    if (where != null) {
-      where = checkQueryConstructor(where);
-    }
-
-    if (ids.length >= paths.length) {
-      throw GetCollectionGroupError(
-          "number of ids must be less than paths for subcollection",
-          StackTrace.current);
-    }
-    try {
-      CollectionReference cr = db.collection(paths[0]);
-      DocumentReference doc = cr.doc(ids[0]);
-      paths.removeAt(0);
-      ids.removeAt(0);
-      for (var item in paths) {
-        //if first do this
-        cr = doc.collection(item);
-        for (var id in ids) {
-          doc = cr.doc(id);
-        }
-      }
-      Query query = cr;
-      var collectionReference = queryConstruction(query,
-          where: where, orderby: orderby, limit: limit);
-      var docs = await collectionReference.get();
-      return parser.parse<Model>(docs);
-    } catch (err, s) {
-      throw GetCollectionGroupError(err.toString(), s);
-    }
+    return collection;
   }
 }

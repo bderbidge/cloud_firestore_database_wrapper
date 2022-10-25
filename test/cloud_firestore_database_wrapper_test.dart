@@ -56,18 +56,17 @@ void main() {
         "score": 300,
         "userType": []
       });
-      await dataSource.create(
-        path,
+      await dataSource.addDocToCollection(
+        path + "/" + uid,
         user,
-        id: user.uid,
       );
       return user;
     }
 
     Future<bool> deleteUser(String id) async {
-      dataSource.delete(path, id);
+      dataSource.delete(path + "/" + id);
       try {
-        await dataSource.getSingleByRefId<User>(path, id);
+        await dataSource.getSingleById<User>(path);
       } catch (err) {
         if (!(err is GetSingleDocumentError)) {
           throw err;
@@ -81,7 +80,7 @@ void main() {
         final originaluser = users.first;
         final uid = originaluser.uid;
 
-        User user = await dataSource.getSingleByRefId<User>(path, uid);
+        User user = await dataSource.getSingleById<User>(path + "/" + uid);
         expect(originaluser.toJSON(), user.toJSON());
       } catch (err) {
         print(err);
@@ -90,7 +89,7 @@ void main() {
     });
 
     test('get collections', () async {
-      final list = await dataSource.getCollection<User>(path);
+      final list = await dataSource.getCollectionwithParams<User>(path);
       expect(users.length, list.length);
     });
 
@@ -174,14 +173,14 @@ void main() {
         final user = await createNewUser(users.length.toString());
 
         User createdUser =
-            await dataSource.getSingleByRefId<User>(path, user.uid);
+            await dataSource.getSingleById<User>(path + "/" + user.uid);
         expect(user.toJSON(), createdUser.toJSON());
 
         var email = "example2@example.com";
         createdUser.email = email;
-        await dataSource.update(path, createdUser.uid, createdUser);
+        await dataSource.update(path + "/" + createdUser.uid, createdUser);
         final updatedUser =
-            await dataSource.getSingleByRefId<User>(path, createdUser.uid);
+            await dataSource.getSingleById<User>(path + "/" + createdUser.uid);
         expect(email, updatedUser.email);
 
         final deleted = await deleteUser(user.uid);
@@ -199,8 +198,8 @@ void main() {
             value: "Los Angeles",
             whereQueryType: WhereQueryType.isEqualTo)
       ];
-      var addresses = await dataSource.getSubCollection<Address>(
-          [path, addressPath], [users.first.uid],
+      var addresses = await dataSource.getCollectionwithParams<Address>(
+          path + "/" + users.first.uid + "/" + addressPath,
           where: map);
       expect(addresses.length, 6);
     });
@@ -213,8 +212,14 @@ void main() {
               value: "Los Angeles",
               whereQueryType: WhereQueryType.isEqualTo)
         ];
-        var addresses = await dataSource.getSubCollection<Address>(
-            [path, addressPath], [users.first.uid, users.last.uid],
+        var addresses = await dataSource.getCollectionwithParams<Address>(
+            path +
+                "/" +
+                users.first.uid +
+                "/" +
+                addressPath +
+                "/" +
+                users.last.uid,
             where: map);
         expect(addresses, null);
       } catch (err) {

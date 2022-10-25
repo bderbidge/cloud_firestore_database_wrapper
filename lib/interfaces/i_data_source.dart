@@ -32,16 +32,9 @@ class QueryType {
 }
 
 abstract class IDataSource {
-  delete(String path, String id);
+  Future<Model> getSingleById<Model extends BaseModel>(String path);
 
-  update(String path, String id, BaseModel data);
-
-  Future<String> create(String path, BaseModel data, {String? id});
-
-  Future<Model> getSingleByRefId<Model extends BaseModel>(
-      String path, String id);
-
-  Future<List<Model>> getCollection<Model extends BaseModel>(String path);
+  Stream<Model> getStreamByID<Model extends BaseModel>(String path);
 
   Future<List<Model>> getCollectionwithParams<Model extends BaseModel>(
       String path,
@@ -50,21 +43,17 @@ abstract class IDataSource {
       int? limit,
       String? startAfterID});
 
-  Stream<List<Model>> getCollectionStreamWithParams<Model extends BaseModel>(
-      String path,
-      {List<QueryType>? where,
-      Map<String, bool>? orderby,
-      int? limit});
+  Stream<List<Model>> getCollectionStream<Model extends BaseModel>(
+    String path, {
+    List<QueryType>? where,
+    Map<String, bool>? orderby,
+    int? limit,
+  });
 
-  Stream<Model> getStreamByID<Model extends BaseModel>(String path, String id);
-
-  Future<List<Model>> getSubCollection<Model extends BaseModel>(
-      List<String> paths, List<String> ids,
-      {List<QueryType>? where, Map<String, bool>? orderby, int? limit});
-
-  Future<String> addDocToSubcollection<Model extends BaseModel>(
+  Future<String> addDocToCollection<Model extends BaseModel>(
       String path, BaseModel data);
 
-  Stream<List<Model>> getStreamWhere<Model extends BaseModel>(
-      String path, String name, num status);
+  Future<void> update(String path, BaseModel data);
+
+  delete(String path);
 }
