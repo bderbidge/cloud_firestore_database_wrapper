@@ -1,3 +1,7 @@
+## [1.1.0] - 10/24/2022
+
+- Update all methods to use a path based url
+
 ## [1.0.2] - 5/15/2021
 
 - Add Base Model for models to inherit from
