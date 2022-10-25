@@ -1,3 +1,7 @@
+## [1.1.1] - 10/24/2022
+
+- Expose Firestoer parser
+
 ## [1.1.0] - 10/24/2022
 
 - Update all methods to use a path based url
